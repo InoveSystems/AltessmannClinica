@@ -1,0 +1,1 @@
+insert into painel(sala,atualchamada,ultimachamada,penultimachamada,antepenultimachamada,dataAtual,codConsultaAtual) values('-','-','-','-','-','1993-12-29',0)

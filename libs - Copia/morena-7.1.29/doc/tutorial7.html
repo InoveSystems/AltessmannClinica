@@ -1,0 +1,316 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<title>Morena 7 Tutorial</title>
+<style type="text/css">
+BODY
+{ color: white;
+  background-color: #376496;
+  font-family: sans-serif;
+  text-align: center;
+}
+
+#MAIN
+{ 
+  text-align: justify;
+  width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+PRE
+{ background-color: gray;
+  font-family: monospace;
+  padding: 10px;
+}
+
+H1
+{ font-size: 13pt;
+  text-align: right;
+}
+
+H2
+{ font-size: 12pt;
+  text-align: right;
+  margin-top: 30px;
+}
+
+H3
+{ font-size: 10pt;
+  text-align: left;
+  margin-top: 20px;
+}
+
+P, A, UL, LI, PRE
+{ font-size: 10pt;
+}
+
+LI
+{ margin-bottom: 10px;
+}
+
+A
+{ color: yellow;
+}
+
+P.SMALL
+{ font-size: 10pt;
+  font-style: italic;
+}
+
+</style>
+</head>
+<body>
+<div id="MAIN">
+
+<h1>Morena 7 - image acquision framework tutorial</h1>
+
+<h2>Commonly used terms</h2>
+
+<p><a href="http://msdn.microsoft.com/en-us/library/windows/desktop/ms630368(v=VS.85).aspx">WIA</a> Windows Image Acquisition (WIA) is the still image acquisition platform in the Windows 
+family of operating systems starting with Windows Me and Windows XP and continuing to the most recent Windows 7.
+</p>
+
+<p>Image Capture is an application program as well as the architecture that enables users to transfer images from camera or scanner on Mac OS X platform.</p>
+
+<h2>History</h2>
+
+<p>Morena 7 is not a direct successor but rather an evolution of the Morena 6 (TWAIN/SANE implementation) concept. 
+It brings a new common Java API for WIA and ICA (Image Capture) interface that opens the door to the native image acquisition API for the 
+most established commercial desktop operating systems such as MS Windows and Mac OS X.
+</p>
+
+<h2>Differences to Morena6 (TWAIN/SANE)</h2>
+<p>The most notable change that result from asynchronous nature of both native interfaces (WIA and ICA) is that provided Morena7 API is also       
+asynchronous. This difference appears when obtaining available sources where only actually connected devices are listed. It is an oposite to Morena6 (TWAIN/SANE) where
+the list of currently installed drivers is returned (no mater if the device is connecter or not). Difference can be found also when acquiring an image since in Morena7
+the image is obtained in callback method <a href="api/eu/gnome/morena/TransferDoneListener.html#TransferDone(File file)">TransferDone(File file)</a>
+</p>
+<h2>Technical requirements</h2>
+
+<p>Morena7 acts as Java wrapper for WIA and ICA API. Following components are necessary for its use:</p>
+
+<ul>
+  <li>Java2 VM (version 1.5 or newer)</li>
+
+  <li>some image acquisition hardware like scanner or camera</li>
+
+  <li>and appropriate device driver installed (WIA on MS Windows and ICA driver for MacOS X platform)</li>
+
+</ul>
+
+<h2>Installation</h2>
+
+<p>There is no extra installation necessary. Following Java archives morena7.jar, morena_license.jar and morena_win.jar or
+morena_osx.jar has to be in the CLASSPATH. Native components stored in morena_win.jar or morena_osx.jar
+are copied automatically into TMP_DIR folder.</p>
+<hr/>
+
+<h2>Lesson 1 - Quick start</h2>
+
+<p>In this example we'll make an overview how to acquire a single image using Morena7 library. There are six basic steps needed to do:</p>
+<ul>
+  <li>initialization of image acquisition manager (WIA or ICA) and retrieving a list of connected devices</li>
+  <li>selecting a source (scanner, camera etc.)</li>
+  <li>setting a basic parameters</li>
+  <li>acquiring an image (scan document, transfer image from camera, etc.)</li>
+  <li>handle a transfered image or an exception</li>
+  <li>finishing the image acquisition</li>
+</ul>
+
+<p>Following code initialize the WIA/ICA manager and retrieves the list of actually connected devices.</p>
+<pre>
+  Manager manager=Manager.getInstance();
+  List<Device> devices=Manager.listDevices();
+</pre>
+
+<p>This code selects first device from the device list and runs the scanner resp. camera specific code.</p>
+<pre>
+  Device device=devices.get(0);
+  if (device instanceof Scanner)  {
+    // scanner specific code 
+  }
+  else if (device instanceof Camera) {
+    // camera specific code 
+  }
+</pre>
+
+<p>Following code snippet makes a setting of the parameters. Mode designates a colorMode that can be selected from the following <a href="api/eu/gnome/morena/Scanner.html">options</a>
+ while a resolution is set in DPI units. Method <a href="api/eu/gnome/morena/Scanner.html#setFrame(int x, int y, int width, int height)">setFrame(int x, int y, int width, int height)</a>
+  selects the frame of the acquired image (in pixels).</p>
+<pre>
+    Scanner scanner = (Scanner) device;
+    scanner.setMode(Scanner.RGB_8);
+    scanner.setResolution(75);
+    scanner.setFrame(100, 100, 500, 500);
+</pre>
+
+<p>For a single image acquisition we may use SynchronousHelper to make a synchronization for us. It will wait until image is available for the application.
+Two signatures can be used according to what we plan to do with the image. . 
+BufferedImage is returned by the first method signature or exception is thrown when image acquisition fails.</p>
+<pre>
+  BufferedImage bimage = SynchronousHelper.scanImage(device);
+  // make the necessary image processing or conversion
+</pre>
+<p>Second method signature returns File containing the image or throws an exception when image acquisition fails. Exact format of the file is platform and device dependent. 
+On Windows we receive BMP image by default while JPEG image is returned on Mac OS X.</p>
+<pre>
+  File imageFile = SynchronousHelper.scanFile(device);
+  // make the image processing or save the file in the repository
+</pre>
+
+<p>When no other image acquisition is planned then it is time to close manager down and release bound system resources.</p>
+<pre>
+  manager.close();
+</pre>
+<p>Source code example: <a href="examples/src-html/MorenaExample.html">MorenaExample</a></p>
+
+<h2>Lesson 2 - Batch scanning</h2>
+<p>Batch scanning usually involves using scanner with an automatic document feeder (ADF). For scanning bunch of sheets we need just slightly
+modify the code above.</p>
+<p>First we need to retrieve ADF functional unit number (index) because scanner may have more than one paper source input unit e.g. flatbed and ADF.
+If no ADF unit is found or recognized then the default unit (0) is used. 
+</p>
+<pre>
+    int feederUnit=scanner.getFeederFunctionalUnit();
+    if (feederUnit<0)
+      feederUnit=0; // 0 designates a default unit
+</pre>
+
+<p>Then we can check if scanner provide the duplex scanning and enable this feature if possible.</p>
+<pre>
+    if (device.isDuplexSupported())
+      device.setDuplexEnabled(true);
+</pre>
+
+<p>Finally we may use ScanSession helper to make a synchronization for us. It allows to process the images as they will come.
+Empty feeder exception is indication of a successful operation. Any other exception means that operation failed for some reason.</p>
+<pre>
+    ScanSession session=new ScanSession();
+    try {
+      session.startSession(device, feederUnit);
+      File file=null; 
+      while (null!=(file=session.getImageFile())) {
+        
+        // make the necessary image processing or save it in repository
+        
+      }
+    } catch (Exception ex) { // check if error is related to empty ADF
+      if (session.isEmptyFeeder())
+        System.out.println("No more sheets in the document feeder");
+      else
+        ex.printStackTrace();
+    }
+</pre>
+<p>Source code example: <a href="examples/src-html/MorenaExample.html">MorenaExample</a></p>
+
+<h2>Lesson 3 - scanning with UI</h2>
+<p>When we need to incorporate image scanning ability into GUI application the different approach is used. Some of the tasks like selection 
+of device or setting of parameters may be done using built-in or customized UI components.
+There is also usually no need to wait for the scanned images since it would block an application UI.  
+</p>
+<p>First we can use a built-in dialog for device selection. Parameter provided is a UI component that will be an owner of the dialog.</p>
+<pre>
+  Device device = manager.selectDevice(MainPanel.this);
+</pre>
+<p>We may also use built-in dialog for setting device parameters.</p>
+<pre>
+  if (scanner.setupDevice(MainPanel.this)) {
+    // start scanning
+  }
+  else {
+    // scanning is canceled
+  }
+</pre>
+<p>Finally we start transfer of the images. While this method finishes immediately images are handled within
+<a href="api/eu/gnome/morena/TransferDoneListener.html">TransferDoneListener</a> that is provided as an argument.</p>
+<pre>
+    scanner.startTransfer(listener);
+</pre>
+<p>Here is the example how such <a href="api/eu/gnome/morena/TransferDoneListener.html">TransferDoneListener</a> may look like. Two methods has to be implemented:
+<a href="api/eu/gnome/morena/TransferDoneListener.html#transferDone(java.io.File file)">transferDone(file)</a> and 
+<a href="api/eu/gnome/morena/TransferDoneListener.html#transferFailed(int code, java.lang.String error)">transferFailed(code, error message)</a>
+</p>
+<pre>
+  private class TransferDoneListenerImplementation implements TransferDoneListener {
+    @Override
+    public void transferDone(File file)
+    { try 
+      { if (file!=null)
+        {  
+          // do some image processing (e.g. show image on the desktop)
+        }
+        else
+          System.out.println("nothing scanned");
+      }
+      catch (Exception e)
+      { e.printStackTrace();
+      }
+    }
+  
+  
+    @Override
+    public void transferFailed(String error)
+    { System.out.println("Scanning failed");
+    }
+  }
+</pre>
+<p>If monitoring of the scanning process is considered important then <a href="api/eu/gnome/morena/TransferListener.html#transferProgress(int percent)">TransferListener</a> interface
+with the additional method <a href="api/eu/gnome/morena/TransferListener.html#transferProgress(int percent)">transferProgress(percent)</a> needs to be implemented.</p>
+<pre>
+  private class TransferListenerImplementation implements TransferListener {
+
+  ...
+
+    public void transferProgress(int percent) {
+      System.out.println(percent + "%");
+    }
+  }
+</pre>
+<p>Source code example: <a href="examples/src-html/MorenaStudio.html">MorenaStudio</a></p>
+
+<h2>Lesson 4 - advanced options</h2>
+<p>Morena 7 library contains a class <a href="api/eu/gnome/morena/Configuration.html">Configuration</a> for advanced options setting.</p> 
+<h3>Native UI</h3>
+<p>Sometimes it is useful to show a native UI for certain reason (e.g. parameter setting via API is not implemented correctly in driver).</p>
+<p>Please note that this option is available on Windows only. When used on Windows XP (WIA1) it also affects general behavior of the application (e.g. device connection and disconnection detection does not work by default).</p>
+<p>Due technical reasons it is necessary to specify this option before initialization of <a href="api/eu/gnome/morena/Manager.html">Manager</a>.</p>
+<pre>
+    Configuration.setMode(Configuration.MODE_NATIVE_UI);
+    manager = Manager.getInstance();
+    ...
+</pre>
+<p>When we need to preserve device connection & disconnection detection together with using the native UI we need to enable polling.</p>
+<pre>
+    Configuration.setMode(Configuration.MODE_NATIVE_UI | Configuration.MODE_WIA1_POLL_ENABLED);
+    manager = Manager.getInstance();
+    ...
+</pre>
+
+<h3>Logging</h3>
+<p>Morena 7 use Java logging API to monitor application. Log records are directed to logger named "morena".</p> 
+<p>Here is the code example of setting log level detail to FINEST.</p>
+<pre>
+    Configuration.setLogLevel(Level.FINEST);
+    manager = Manager.getInstance();
+    ...
+</pre>
+<h3>Device type setting</h3>
+<p>There are some scanners that incorrectly identify itself as a camera. It applies to most of HP home and office scanners and MFP.</p>
+<p>Here is the code example how to workaround this issue. Regular expression matching name property is provided as an argument.</p>
+<pre>
+    Configuration.addDeviceType(".*fficejet.*", true);  
+    manager = Manager.getInstance();
+    ...
+</pre>
+<hr/>
+
+<a name="troubleshooting"></a>
+<h2>Troubleshooting and FAQ</h2>
+
+<p>Answers to the most common questions, tasks and problems can be found at our 
+<a href="http://www.gnome.sk/Twain/jtp_support.html">Morena's technical support web page</a>.
+</p>
+</div>
+</body>
+</html>

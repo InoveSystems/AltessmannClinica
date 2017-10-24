@@ -1,0 +1,8 @@
+Morena - Image Acquisition Framework version 7
+
+Copyright (c) 1999-2011 Gnome spol. s r.o. All Rights Reserved.
+
+This software and documentation is the confidential and proprietary 
+information of Gnome, Ltd. You shall not disclose such Confidential
+Information and shall use it only in accordance with the terms of
+the license agreement you entered into with Gnome.

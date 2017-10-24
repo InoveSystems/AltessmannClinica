@@ -1,0 +1,1 @@
+﻿insert into convenio (codigo,nome,porcentagem,dtcriacao) values (0,'(nenhum)',0.0,now())
